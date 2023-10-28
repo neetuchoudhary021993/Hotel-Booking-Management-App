@@ -24,6 +24,7 @@ function Cabins() {
             </Row>
         </>
     );
+
 }
 
 export default Cabins;
