@@ -7,8 +7,6 @@ import {useMutation, useQueryClient} from "@tanstack/react-query";
 import {createEditCabin} from "../../services/apiCabins";
 import toast from "react-hot-toast";
 import FileInput from "../../ui/FileInput";
-import { useCreateCabin } from "./useCreateCabin";
-import { useEditCabin } from "./useEditCabin";
 
 function CreateCabinForm({cabinToEdit = {}}) {
     const {id: editId, ...editValues} = cabinToEdit;
@@ -24,9 +22,33 @@ function CreateCabinForm({cabinToEdit = {}}) {
     } = useForm({
         defaultValues: isEditSession ? editValues : {},
     });
-  const {createCabin, iscreating} = useCreateCabin();
+    const queryClient = useQueryClient();
 
-  const {editCabin, isEditing} = useEditCabin();
+    const {isLoading: iscreating, mutate: createCabin} = useMutation({
+        mutationFn: createEditCabin,
+        onSuccess: () => {
+            toast.success("New cabin created successfully");
+            //refetch data
+            queryClient.invalidateQueries({
+                queryKey: ["cabins"],
+            });
+            reset();
+        },
+        onError: (error) => toast.error(error.message),
+    });
+
+    const {isLoading: isEditing, mutate: editCabin} = useMutation({
+        mutationFn: ({newCabinData, id}) => createEditCabin(newCabinData, id),
+        onSuccess: () => {
+            toast.success("Cabin edited successfully");
+            //refetch data
+            queryClient.invalidateQueries({
+                queryKey: ["cabins"],
+            });
+            reset();
+        },
+        onError: (error) => toast.error(error.message),
+    });
 
     function onSubmit(data) {
         //        console.log('formData', data)
