@@ -3,14 +3,12 @@ import FormRow from "../../ui/FormRow";
 import Input from "../../ui/Input";
 import Button from "../../ui/Button";
 import {useForm} from "react-hook-form";
-import {useMutation, useQueryClient} from "@tanstack/react-query";
-import {createEditCabin} from "../../services/apiCabins";
-import toast from "react-hot-toast";
 import FileInput from "../../ui/FileInput";
-import { useCreateCabin } from "./useCreateCabin";
-import { useEditCabin } from "./useEditCabin";
+import {useCreateCabin} from "./useCreateCabin";
+import {useEditCabin} from "./useEditCabin";
+import Form from "../../ui/Form";
 
-function CreateCabinForm({cabinToEdit = {}}) {
+function CreateCabinForm({cabinToEdit = {}, onCloseModal}) {
     const {id: editId, ...editValues} = cabinToEdit;
     // console.log("EditValues", editValues)
     const isEditSession = Boolean(editId);
@@ -24,23 +22,40 @@ function CreateCabinForm({cabinToEdit = {}}) {
     } = useForm({
         defaultValues: isEditSession ? editValues : {},
     });
-  const {createCabin, iscreating} = useCreateCabin();
+    const {createCabin, iscreating} = useCreateCabin();
 
-  const {editCabin, isEditing} = useEditCabin();
+    const {editCabin, isEditing} = useEditCabin();
 
     function onSubmit(data) {
-        //        console.log('formData', data)
+            //    console.log('formData', data)
+            console.log("reset", reset)
         console.log("CabinImage", data.image[0]);
-        const image = typeof data.image === 'string'?  data.image : data.image[0];
+        const image = typeof data.image === "string" ? data.image : data.image[0];
         if (isEditSession) {
-            editCabin({newCabinData: {...data, image}, id: editId});
+            editCabin(
+                {newCabinData: {...data, image}, id: editId},
+                {
+                    onSuccess: (data) => {
+                        reset(),
+                         onCloseModal?.();
+                    },
+                }
+            );
         } else {
-            createCabin({...data, image: image});
+            createCabin(
+                {...data, image: image},
+                {
+                    onSuccess: (data) => {
+                        reset(),
+                         onCloseModal?.();
+                    },
+                }
+            );
         }
     }
     const isWorking = iscreating || isEditing;
     return (
-        <form onSubmit={handleSubmit(onSubmit)}>
+        <Form onSubmit={handleSubmit(onSubmit)} type={onCloseModal ? "modal" : "regular"}>
             <FormRow label="Cabin name" error={errors?.name?.message}>
                 <Input
                     type="text"
@@ -108,17 +123,21 @@ function CreateCabinForm({cabinToEdit = {}}) {
             </FormRow>
 
             <FormRow label="Cabin Photo">
-                <FileInput id="image" accept="image/*" {...register("image", {required: isEditSession ? false : "This field is required"})} />
+                <FileInput
+                    id="image"
+                    accept="image/*"
+                    {...register("image", {required: isEditSession ? false : "This field is required"})}
+                />
                 {/* <Input type="file" id="image" accept="image/*"/> */}
             </FormRow>
 
             <FormRow>
-                <Button variation="secondary" type="reset">
+                <Button onClick={() => onCloseModal?.()} variation="secondary" type="reset">
                     Cancel
                 </Button>
                 <Button disabled={isWorking}>{isEditSession ? "Edit Cabin" : "Create New Cabin"}</Button>
             </FormRow>
-        </form>
+        </Form>
     );
 }
 
